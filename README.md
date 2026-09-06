@@ -22,19 +22,18 @@ Unlike other job-autofill tools, **Swiftply has no cloud backend, requires no ac
 - [Why Swiftply?](#-why-swiftply)
 - [Key Features](#-key-features)
 - [Installation Guide](#-installation-guide)
-  - [Prerequisites](#prerequisites)
-  - [1. Download & Build](#1-download--build)
-  - [2. Load into Chrome](#2-load-into-chrome)
-  - [3. Pin the Extension](#3-pin-the-extension)
-- [How to Use Swiftply](#-how-to-use-swiftply)
-  - [Step 1: Set Up Your Profile](#step-1-set-up-your-profile)
-  - [Step 2: Navigate to Any Job Application](#step-2-navigate-to-any-job-application)
+  - [⚡ Option 1: Quick Install for Friends (No Tech Skills Needed!)](#-option-1-quick-install-for-friends-no-tech-skills-needed)
+  - [💻 Option 2: Developer Install (Building from Source)](#-option-2-developer-install-building-from-source)
+- [How to Use Swiftply in Your Daily Job Hunt](#-how-to-use-swiftply-in-your-daily-job-hunt)
+  - [Step 1: Set Up Your Profile (or Upload Résumé)](#step-1-set-up-your-profile-or-upload-rsum)
+  - [Step 2: Go to Any Job Application](#step-2-go-to-any-job-application)
   - [Step 3: Preview and Fill](#step-3-preview-and-fill)
   - [Step 4: Revert Anytime (Undo Fill)](#step-4-revert-anytime-undo-fill)
+- [Day-to-Day Pro Tips](#-day-to-day-pro-tips)
 - [AI-Assisted Matching (Optional)](#-ai-assisted-matching-optional)
 - [Privacy & Security First](#-privacy--security-first)
 - [Tech Stack](#-tech-stack)
-- [Development & Testing](#-development--testing)
+- [Development & Packaging](#-development--packaging)
 - [Project Documentation](#-project-documentation)
 - [FAQ & Limitations](#-faq--limitations)
 - [License](#-license)
@@ -70,81 +69,104 @@ Every job seeker knows the frustration: you upload your résumé, and then the s
 
 ## 🚀 Installation Guide
 
-Swiftply is currently distributed as an unpacked developer extension. Installing takes under two minutes.
+Choose the option that fits you best:
 
-### Prerequisites
+### ⚡ Option 1: Quick Install for Friends (No Tech Skills Needed!)
 
-- **[Node.js](https://nodejs.org/)** (v18.0.0 or higher)
-- **Google Chrome** (or any Chromium browser: Brave, Edge, Arc, Opera, Vivaldi)
+> **Zero coding knowledge required!** You do **not** need Node.js, Git, or terminal commands.
 
-### 1. Download & Build
-
-Open your terminal or command prompt and run:
-
-```bash
-# Clone the repository (or download and extract the ZIP)
-git clone https://github.com/your-username/swiftply.git
-cd swiftply
-
-# Install dependencies
-npm install
-
-# Build the production extension bundle
-npm run build
-```
-
-This generates a ready-to-use extension in the `dist/` directory.
-
-### 2. Load into Chrome
-
-1. Open Chrome and navigate to:
-   ```text
-   chrome://extensions
-   ```
-2. Toggle **Developer mode** in the top-right corner.
-3. Click the **Load unpacked** button in the top-left corner.
-4. Select the **`dist/`** folder located inside your Swiftply project directory.
-
-### 3. Pin the Extension
-
-Click the puzzle piece icon (🧩) in Chrome’s top-right toolbar, find **Swiftply**, and click the pin icon (📌). The Swiftply lightning bolt (⚡) will now always be easily accessible!
+1. **Download Swiftply:**
+   - Go to the **[Releases](https://github.com/Samyagya/Swiftply/releases)** page.
+   - Under the latest release, click to download **`swiftply.zip`**.
+   *(Alternatively, if your friend sent you the project folder or ZIP directly, extract it to your computer).*
+2. **Extract the ZIP file:**
+   - Right-click `swiftply.zip` and select **Extract All...** (or Unzip).
+   - Open the extracted folder (make sure you see files like `manifest.json` inside).
+3. **Load it into Google Chrome:**
+   - Open Chrome and type `chrome://extensions` in the address bar, then press **Enter**.
+   - In the top-right corner, switch the **Developer mode** toggle to **ON**.
+   - In the top-left corner, click **Load unpacked**.
+   - Select the extracted folder containing `manifest.json`.
+4. **Pin the Extension:**
+   - Click the puzzle piece icon (🧩) in Chrome’s top-right toolbar.
+   - Find **Swiftply** and click the **Pin** icon (📌).
+   - The Swiftply lightning bolt (⚡) is now ready to use!
 
 ---
 
-## 📖 How to Use Swiftply
+### 💻 Option 2: Developer Install (Building from Source)
 
-### Step 1: Set Up Your Profile
+For developers who want to inspect the source code or build the extension from scratch:
+
+#### Prerequisites
+- **[Node.js](https://nodejs.org/)** (v18.0.0 or higher)
+- **Google Chrome** (or any Chromium browser: Brave, Edge, Arc, Opera, Vivaldi)
+
+#### Build Steps
+```bash
+# 1. Clone the repository
+git clone https://github.com/Samyagya/Swiftply.git
+cd Swiftply
+
+# 2. Install dependencies
+npm install
+
+# 3. Build the production extension bundle
+npm run build
+```
+
+This generates a ready-to-use production extension in the `dist/` directory.
+
+#### Load into Chrome
+1. Open `chrome://extensions` in your browser.
+2. Toggle **Developer mode** in the top-right corner.
+3. Click **Load unpacked** in the top-left corner.
+4. Select the **`dist/`** folder located inside your Swiftply project directory.
+5. Pin the extension to your toolbar.
+
+---
+
+## 📖 How to Use Swiftply in Your Daily Job Hunt
+
+### Step 1: Set Up Your Profile (or Upload Résumé)
 
 1. Click the **Swiftply icon** (⚡) in your browser toolbar.
-2. Click **New profile** (or edit the default profile).
-3. Fill in your details:
-   - **Personal Info:** First & last name, email, phone, city, state, country, postal code.
-   - **Web Links:** LinkedIn, GitHub, Portfolio website, Twitter/X.
-   - **Work Experience & Education:** Role, company, start/end dates, degree, school, field of study.
-4. *Tip:* Have an existing résumé? Click **Upload résumé** to parse a `.pdf` or `.docx` file and let Swiftply fill out your profile automatically!
-5. Click **Save profile**.
+2. Click **New profile** (or edit an existing one).
+3. Choose how you want to fill your profile:
+   - **Fastest:** Click **Upload résumé** and select your PDF or Word (`.docx`) résumé. Swiftply will instantly parse your contact information, URLs, work experiences, and degrees into the form!
+   - **Manual:** Fill in your personal details, links (LinkedIn, GitHub, Portfolio), work history, and education directly.
+4. Review your details and click **Save profile**.
 
-### Step 2: Navigate to Any Job Application
+### Step 2: Go to Any Job Application
 
-Go to any job posting page with an application form (e.g., on Greenhouse, Lever, Workday, Ashby, BambooHR, etc.).
+Navigate to any job application page (e.g., Greenhouse, Lever, Workday, Ashby, BambooHR, or custom career sites).
 
 ### Step 3: Preview and Fill
 
-1. Click the **Swiftply icon** (⚡).
-2. Verify your desired profile is selected.
+1. Click the **Swiftply icon** (⚡) on the job page.
+2. Ensure your active profile is selected.
 3. Click **Fill Application**.
-4. Swiftply scans the page and displays a **Fill Preview**:
-   - ✅ **Green rows:** Fields confidently matched to your profile.
-   - ⚪ **Grey rows:** Unmatched fields on the page.
+4. Swiftply scans the page form fields and displays a **Fill Preview**:
+   - ✅ **Green rows:** Form fields confidently matched to your profile.
+   - ⚪ **Grey rows:** Unmatched or custom fields on the page.
 5. Click **Fill N matched fields**.
-6. The extension populates the form inputs instantly. The web page will show:
-   - 🟢 Green outline around successfully filled inputs.
-   - 🟡 Amber dashed outline around any inputs that still need your attention.
+6. The web page updates immediately:
+   - 🟢 **Green outline:** Fields filled with your profile data.
+   - 🟡 **Dashed amber outline:** Fields that were skipped or need manual input.
 
 ### Step 4: Revert Anytime (Undo Fill)
 
-Want to change profiles or revert?
-- Simply click **Undo fill** in the Swiftply popup to instantly restore all form values back to their pre-filled states.
+Want to switch profiles or reset the form?
+- Simply click **Undo fill** in the Swiftply popup to immediately restore all form values to their original state.
+
+---
+
+## 💡 Day-to-Day Pro Tips
+
+* **Attaching your résumé file:** Modern browser security intentionally blocks extensions from programmatically uploading files to `<input type="file">`. Always click the "Attach Résumé" button on the job site yourself.
+* **No Auto-Submit:** Swiftply will **never** click "Submit" or "Apply" on your behalf. You are always in full control to review every answer before submitting.
+* **Multi-Step Applications (e.g. Workday):** On multi-step wizard applications, simply click the Swiftply icon and hit "Fill Application" on each page/step as you proceed through the wizard.
+* **Multiple Profiles:** You can create different profiles for different types of roles (e.g. "Frontend Engineer", "Full Stack Developer") and switch between them with one click.
 
 ---
 
@@ -196,9 +218,9 @@ Your personal information should remain yours. Swiftply is engineered with zero 
 
 ---
 
-## 💻 Development & Testing
+## 💻 Development & Packaging
 
-If you'd like to modify or contribute to Swiftply:
+If you'd like to develop, test, or package Swiftply:
 
 ```bash
 # Start Vite development server with Hot Module Replacement (HMR)
@@ -207,11 +229,18 @@ npm run dev
 # Run unit tests
 npm test
 
-# Build production bundle
+# Build production bundle into dist/
 npm run build
+
+# Package into a ready-to-share swiftply.zip
+npm run package
 ```
 
-> **Tip:** When developing with `npm run dev`, make your edits, and then reload the extension on `chrome://extensions` using the refresh icon (🔄) on the Swiftply card.
+### 📦 How to create a release for friends:
+1. Run `npm run package` in your terminal. This creates a fresh `swiftply.zip` in the root folder.
+2. Go to your GitHub repository: [github.com/Samyagya/Swiftply/releases](https://github.com/Samyagya/Swiftply/releases)
+3. Click **Draft a new release**, enter a tag (e.g. `v0.1.0`), and attach `swiftply.zip`.
+4. Click **Publish release**. Now anyone can download and install it in 1 minute!
 
 ---
 

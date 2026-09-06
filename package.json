@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "package": "vite build && powershell -Command \"Compress-Archive -Path dist\\* -DestinationPath swiftply.zip -Force\""
   },
   "dependencies": {
     "@fontsource/inter": "^5.0.0",
