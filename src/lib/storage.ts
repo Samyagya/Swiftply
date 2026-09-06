@@ -9,7 +9,7 @@
  *     or logged (rules.md §3).
  */
 
-import { Profile, ProfileSchema, Settings, SettingsSchema, DEFAULT_SETTINGS } from './types'
+import { Profile, ProfileSchema, Settings, SettingsSchema, DEFAULT_SETTINGS, FillLogEntry, FillLogEntrySchema } from './types'
 import { STORAGE_KEYS } from './constants'
 
 // ---------------------------------------------------------------------------
@@ -115,3 +115,48 @@ export async function saveSettings(settings: Settings): Promise<void> {
   SettingsSchema.parse(settings)
   await chrome.storage.local.set({ [STORAGE_KEYS.SETTINGS]: settings })
 }
+
+// ---------------------------------------------------------------------------
+// Fill Log (Phase 8)
+// ---------------------------------------------------------------------------
+
+/** Max entries to keep in the fill log (FIFO trim). */
+const FILL_LOG_MAX_ENTRIES = 50
+
+/**
+ * Returns all persisted fill log entries, most recent first.
+ * Malformed entries are skipped (never crash on read).
+ */
+export async function getFillLog(): Promise<FillLogEntry[]> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.FILL_LOG)
+  const raw: unknown = result[STORAGE_KEYS.FILL_LOG]
+  if (!Array.isArray(raw)) return []
+
+  const entries: FillLogEntry[] = []
+  for (const item of raw) {
+    const parsed = FillLogEntrySchema.safeParse(item)
+    if (parsed.success) {
+      entries.push(parsed.data)
+    } else {
+      console.error('[Swiftply] Skipped malformed fill log entry:', parsed.error.flatten())
+    }
+  }
+  return entries
+}
+
+/**
+ * Prepends a new fill log entry and trims the log to FILL_LOG_MAX_ENTRIES.
+ * Throws on storage error — callers should show a toast (Phase 8).
+ */
+export async function saveFillLogEntry(entry: FillLogEntry): Promise<void> {
+  FillLogEntrySchema.parse(entry) // validate before writing
+  const existing = await getFillLog()
+  const updated = [entry, ...existing].slice(0, FILL_LOG_MAX_ENTRIES)
+  await chrome.storage.local.set({ [STORAGE_KEYS.FILL_LOG]: updated })
+}
+
+/** Removes all fill log entries from storage. */
+export async function clearFillLog(): Promise<void> {
+  await chrome.storage.local.remove(STORAGE_KEYS.FILL_LOG)
+}
+

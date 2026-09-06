@@ -10,7 +10,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import { CheckCircle2, Loader2, Pencil, Plus, Trash2, Zap } from 'lucide-react'
-import { FormField, Profile } from '../../lib/types'
+import { FieldMapping, FormField, Profile } from '../../lib/types'
 import {
   deleteProfile,
   getActiveProfileId,
@@ -21,11 +21,16 @@ import {
 interface Props {
   onNewProfile: () => void
   onEditProfile: (profile: Profile) => void
-  /** Called when a scan completes — transitions popup to the debug view. */
-  onScanResult: (fields: FormField[], warning: string | null) => void
+  /** Called when scan + match both complete — transitions popup to the match view. */
+  onFillReady: (
+    fields: FormField[],
+    mappings: FieldMapping[],
+    warning: string | null,
+    profileName: string,
+  ) => void
 }
 
-export default function ProfileList({ onNewProfile, onEditProfile, onScanResult }: Props): React.JSX.Element {
+export default function ProfileList({ onNewProfile, onEditProfile, onFillReady }: Props): React.JSX.Element {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
@@ -73,30 +78,52 @@ export default function ProfileList({ onNewProfile, onEditProfile, onScanResult 
     setScanning(true)
 
     try {
-      // Get the active tab in the current window
+      // Step 1: get the active tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-
       if (!tab?.id) {
-        setScanError('No active tab found. Click on a job application page first.')
+        setScanError('No active tab found. Open a job application page first.')
         return
       }
 
-      // Send SCAN_PAGE to the background worker, which injects + queries content script
-      const response = await chrome.runtime.sendMessage({
+      // Step 2: inject content script + scan page fields
+      const scanResponse = await chrome.runtime.sendMessage({
         type: 'SCAN_PAGE',
         payload: { tabId: tab.id },
       })
 
-      // Background always responds with a SCAN_RESULT envelope
-      if (response?.type === 'SCAN_RESULT') {
-        const { fields, warning } = response.payload as {
-          fields: FormField[]
-          warning: string | null
-        }
-        onScanResult(fields, warning)
-      } else {
+      if (scanResponse?.type !== 'SCAN_RESULT') {
         setScanError('Unexpected response from scanner. Please try again.')
+        return
       }
+
+      const { fields, warning } = scanResponse.payload as {
+        fields: FormField[]
+        warning: string | null
+      }
+
+      // Step 3: get the active profile object for matching
+      // profiles state already loaded — find by activeId
+      const activeProfile = profiles.find((p) => p.id === activeId)
+      if (!activeProfile) {
+        setScanError('No active profile selected. Select one above.')
+        return
+      }
+
+      // Step 4: send fields + profile to background for heuristic matching
+      const matchResponse = await chrome.runtime.sendMessage({
+        type: 'MATCH_FIELDS',
+        payload: { fields, profile: activeProfile },
+      })
+
+      if (matchResponse?.type !== 'MATCH_RESULT') {
+        setScanError('Unexpected response from matcher. Please try again.')
+        return
+      }
+
+      const { mappings } = matchResponse.payload as { mappings: FieldMapping[] }
+
+      // Step 5: transition to match preview view
+      onFillReady(fields, mappings, warning, activeProfile.name)
     } catch (err) {
       console.error('[Swiftply] Fill pipeline error:', err)
       setScanError('Could not scan the page. Make sure you are on a job application.')

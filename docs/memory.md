@@ -5,9 +5,9 @@
 ---
 
 ## Status Summary
-- **Current phase:** Phase 2 — Resume Parsing (not yet started)
-- **Last updated:** 2026-09-05
-- **Currently working on file:** _(Phase 1 complete — ready for Phase 2)_
+- **Current phase:** Phase 8 complete. Phase 7 (multi-step / Workday) deferred to v1.1.
+- **Last updated:** 2026-09-06
+- **Currently working on:** _(Phase 8 complete — ready for Phase 7 or real-world QA)_
 
 ---
 
@@ -83,8 +83,9 @@ Track ATS-specific quirks discovered during testing here, so heuristics/override
 ---
 
 ## Open Questions Carried Forward
-- Do we support Google Sheets/Notion as an alternate profile data source? (from PRD.md §10)
-- Do we charge for LLM-assisted matching, or require BYO API key? → **Resolved: BYO API key**
+- Do we support Google Sheets/Notion as an alternate profile data source? (from PRD.md §10) — deferred to v2
+- Do we charge for LLM-assisted matching, or require BYO API key? → **Resolved: BYO API key** (Phase 6)
+- Phase 7 multi-step / Workday support → **Deferred to v1.1** (Phase 8 done first for production quality)
 
 ---
 
@@ -95,3 +96,11 @@ Track ATS-specific quirks discovered during testing here, so heuristics/override
 **2026-09-05 (Session 2)** — Phase 0 complete. Scaffolded full project: package.json, Vite+CRXJS config, Tailwind, Manifest V3 (no content_scripts), popup (Popup.tsx), background stub, content stub, all folder-structure stubs per Architecture.md, icon generated. `npm run build` passes clean with 0 errors, 0 warnings. Ready for Phase 1.
 
 **2026-09-05 (Session 3)** — Phase 1 complete. Implemented: types.ts (Zod schemas + inferred types), constants.ts, storage.ts (typed chrome.storage.local wrapper), Popup.tsx (routing), ProfileList.tsx (card list, two-step delete), ProfileForm.tsx (7-section form, Zod validation, sticky footer, CREATE+EDIT modes). `npm run build` clean at 2.13s. Ready for Phase 2.
+
+**2026-09-06 (Session 4)** — Phases 2–6 + Phase 8 complete.
+- Phase 2: PDF/DOCX resume parsing (pdfjs-dist, mammoth.js); structureParser regex heuristics; upload button in ProfileForm.
+- Phase 3: fieldScanner DOM walker, FIELD_REGISTRY (index-based), iframeBridge, messageRouter SCAN_PAGE routing. Injection via scripting.executeScript + allFrames.
+- Phase 4: heuristicMatcher (24 keys, 60+ patterns, 0.85/0.65 confidence), 33 Vitest tests passing, MatchView in popup.
+- Phase 5: fieldFiller (setNativeValue — rules.md §6), UNDO_SNAPSHOT, highlighter (CSS outline, dashed amber for unmatched), EXECUTE_FILL/UNDO_FILL pipeline, ResultView.
+- Phase 6: llmMatcher (Claude haiku-3-5, 8s timeout, Zod response validation, value re-derivation from profile), SettingsView (LLM toggle off-by-default, API key with show/hide, privacy disclosure), manifest host_permissions.
+- Phase 8: FillLogEntry type + storage helpers, FillLog.tsx (day-grouped, expandable failures, clear-with-confirm), toast system, highlight fix (dashed amber-600), README full rewrite. Build: ✅ 0 errors.

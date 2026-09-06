@@ -112,6 +112,63 @@ export const FieldMappingSchema = z.object({
 export type FieldMapping = z.infer<typeof FieldMappingSchema>
 
 // ---------------------------------------------------------------------------
+// FillResultEntry — per-field outcome from fieldFiller (Phase 5)
+// ---------------------------------------------------------------------------
+
+export const FillResultEntrySchema = z.object({
+  selector: z.string(),
+  status: z.enum(['filled', 'skipped', 'failed']),
+  /** User-readable reason for failure; only present when status === 'failed'. */
+  error: z.string().optional(),
+})
+export type FillResultEntry = z.infer<typeof FillResultEntrySchema>
+
+// ---------------------------------------------------------------------------
+// FillLogEntry — one record per fill session, persisted in chrome.storage.local
+// Used by FillLog.tsx to show session history (Phase 8)
+// ---------------------------------------------------------------------------
+
+export const FillLogEntrySchema = z.object({
+  id: z.string(),
+  timestamp: z.number(),       // Date.now()
+  siteUrl: z.string(),         // URL of the tab at fill time
+  siteTitle: z.string(),       // document.title at fill time
+  profileName: z.string(),     // name of the profile used
+  filled: z.number(),
+  skipped: z.number(),
+  failed: z.number(),
+  failures: z.array(
+    z.object({
+      selector: z.string(),
+      error: z.string().optional(),
+    }),
+  ),
+})
+export type FillLogEntry = z.infer<typeof FillLogEntrySchema>
+
+
+// ---------------------------------------------------------------------------
+// LLM matcher response schemas (Phase 6)
+// Claude must return JSON matching this shape; Zod validates before use.
+// ---------------------------------------------------------------------------
+
+/** One entry in Claude's response: a field label mapped to a profile key. */
+export const LlmFieldMatchSchema = z.object({
+  /** The field label exactly as sent to Claude. */
+  label: z.string(),
+  /** Profile key path, e.g. "contact.firstName", "eeo.gender". */
+  profileKey: z.string().min(1),
+})
+export type LlmFieldMatch = z.infer<typeof LlmFieldMatchSchema>
+
+/** Top-level shape of Claude's JSON response. */
+export const LlmMatchResponseSchema = z.object({
+  matches: z.array(LlmFieldMatchSchema),
+})
+export type LlmMatchResponse = z.infer<typeof LlmMatchResponseSchema>
+
+
+// ---------------------------------------------------------------------------
 // Message envelope — typed messages between popup / background / content
 // All messages must be validated against this schema before acting (rules.md §2).
 // ---------------------------------------------------------------------------
@@ -119,8 +176,11 @@ export type FieldMapping = z.infer<typeof FieldMappingSchema>
 export const MessageTypeSchema = z.enum([
   'SCAN_PAGE',
   'SCAN_RESULT',
+  'MATCH_FIELDS',   // Phase 4: popup → background, sends FormField[] + Profile
+  'MATCH_RESULT',   // Phase 4: background → popup, sends FieldMapping[]
   'EXECUTE_FILL',
   'FILL_RESULT',
+  'UNDO_FILL',      // Phase 5: popup → background → content, reverts fill + clears highlights
   'PAGE_CHANGED',
 ])
 export type MessageType = z.infer<typeof MessageTypeSchema>

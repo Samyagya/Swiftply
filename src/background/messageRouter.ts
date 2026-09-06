@@ -1,21 +1,22 @@
 /**
  * messageRouter.ts — Routes messages between the popup and content script.
  *
- * Phase 3 responsibilities:
- *   SCAN_PAGE (popup → background):
- *     1. Inject the content script into the active tab (if not already injected)
- *     2. Forward SCAN_PAGE to the content script
- *     3. Return SCAN_RESULT back to the popup as the sendResponse value
- *
- * Phase 5 will extend this with EXECUTE_FILL / FILL_RESULT routing.
+ * Handlers:
+ *   SCAN_PAGE    — injects content script, scans fields, returns SCAN_RESULT
+ *   MATCH_FIELDS — runs heuristic matcher, returns MATCH_RESULT
+ *   EXECUTE_FILL — forwards FieldMapping[] to content script, returns FILL_RESULT
+ *   UNDO_FILL    — tells content script to restore values + clear highlights
  *
  * All incoming messages are validated against MessageEnvelopeSchema before
  * processing — unknown or malformed messages are silently ignored (rules.md §2).
  *
- * Phase 3 implementation — see docs/features/04-field-scanner.md
+ * Phase 3 + Phase 5 implementation.
  */
 
-import { MessageEnvelopeSchema, FormField } from '../lib/types'
+import { FieldMapping, FormFieldSchema, FormField, MessageEnvelopeSchema, Profile, ProfileSchema } from '../lib/types'
+import { matchFields } from './heuristicMatcher'
+import { llmMatch } from './llmMatcher'
+import { getSettings } from '../lib/storage'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -97,6 +98,116 @@ async function handleScanPage(
 }
 
 // ---------------------------------------------------------------------------
+// Handler: MATCH_FIELDS
+// ---------------------------------------------------------------------------
+
+async function handleMatchFields(
+  payload: { fields: FormField[]; profile: Profile },
+  sendResponse: (response: unknown) => void,
+): Promise<void> {
+  // Validate both sides of the payload with Zod before acting (rules.md §2)
+  const fieldsResult = FormFieldSchema.array().safeParse(payload.fields)
+  const profileResult = ProfileSchema.safeParse(payload.profile)
+
+  if (!fieldsResult.success || !profileResult.success) {
+    console.error('[Swiftply] MATCH_FIELDS: invalid payload', {
+      fields: fieldsResult.error?.issues,
+      profile: profileResult.error?.issues,
+    })
+    sendResponse({
+      type: 'MATCH_RESULT',
+      payload: { mappings: [] as FieldMapping[], error: 'Invalid payload shape' },
+    })
+    return
+  }
+
+  const fields = fieldsResult.data
+  const profile = profileResult.data
+
+  // Step 1: heuristic matching (always runs, no API call)
+  const heuristicMappings = matchFields(fields, profile)
+
+  // Step 2: LLM matching on unmatched fields (only when user has enabled it)
+  const settings = await getSettings()
+  let finalMappings = heuristicMappings
+
+  if (settings.llmEnabled && settings.llmApiKey.trim()) {
+    // Collect only the FormFields whose heuristic result was 'unmatched'
+    const unmatchedFields = fields.filter(
+      (_, i) => heuristicMappings[i]?.source === 'unmatched',
+    )
+
+    if (unmatchedFields.length > 0) {
+      try {
+        const llmMappings = await llmMatch(unmatchedFields, profile, settings.llmApiKey)
+
+        // Merge: replace 'unmatched' slots with LLM results where available
+        const llmBySelector = new Map(llmMappings.map((m) => [m.selector, m]))
+        finalMappings = heuristicMappings.map((m) => {
+          if (m.source !== 'unmatched') return m
+          return llmBySelector.get(m.selector) ?? m
+        })
+      } catch (err) {
+        // LLM failure is non-fatal — heuristic results still returned (rules.md §2)
+        console.error('[Swiftply] LLM match failed, falling back to heuristic only:', err)
+      }
+    }
+  }
+
+  sendResponse({ type: 'MATCH_RESULT', payload: { mappings: finalMappings } })
+}
+
+// ---------------------------------------------------------------------------
+// Handler: EXECUTE_FILL
+// ---------------------------------------------------------------------------
+
+/**
+ * Forwards FieldMapping[] to the content script for DOM writing.
+ * The content script is already injected from the preceding SCAN_PAGE call.
+ */
+async function handleExecuteFill(
+  payload: { tabId: number; mappings: FieldMapping[] },
+  sendResponse: (response: unknown) => void,
+): Promise<void> {
+  try {
+    const result = await chrome.tabs.sendMessage(payload.tabId, {
+      type: 'EXECUTE_FILL',
+      payload: { mappings: payload.mappings },
+    })
+    sendResponse(result)
+  } catch (err) {
+    console.error('[Swiftply] EXECUTE_FILL forward failed:', err)
+    sendResponse({
+      type: 'FILL_RESULT',
+      payload: {
+        results: [],
+        error: 'Could not reach the page. Try reloading and filling again.',
+      },
+    })
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Handler: UNDO_FILL
+// ---------------------------------------------------------------------------
+
+async function handleUndoFill(
+  payload: { tabId: number },
+  sendResponse: (response: unknown) => void,
+): Promise<void> {
+  try {
+    const result = await chrome.tabs.sendMessage(payload.tabId, {
+      type: 'UNDO_FILL',
+      payload: {},
+    })
+    sendResponse(result)
+  } catch (err) {
+    console.error('[Swiftply] UNDO_FILL forward failed:', err)
+    sendResponse({ type: 'FILL_RESULT', payload: { results: [], undone: false } })
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Router entry point
 // ---------------------------------------------------------------------------
 
@@ -110,6 +221,27 @@ export function startMessageRouter(): void {
     switch (parsed.data.type) {
       case 'SCAN_PAGE':
         void handleScanPage(parsed.data.payload as ScanPagePayload, sendResponse)
+        return true // signal async response
+
+      case 'MATCH_FIELDS':
+        void handleMatchFields(
+          parsed.data.payload as { fields: FormField[]; profile: Profile },
+          sendResponse,
+        )
+        return true // signal async response
+
+      case 'EXECUTE_FILL':
+        void handleExecuteFill(
+          parsed.data.payload as { tabId: number; mappings: FieldMapping[] },
+          sendResponse,
+        )
+        return true // signal async response
+
+      case 'UNDO_FILL':
+        void handleUndoFill(
+          parsed.data.payload as { tabId: number },
+          sendResponse,
+        )
         return true // signal async response
 
       default:
