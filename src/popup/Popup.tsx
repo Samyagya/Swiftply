@@ -18,8 +18,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
   Clock,
   Eye,
   EyeOff,
@@ -233,17 +231,15 @@ function MatchView({
   mappings,
   warning,
   tabId,
-  profileName,
   onFillComplete,
-  showToast,
 }: {
   fields: FormField[]
   mappings: FieldMapping[]
   warning: string | null
   tabId: number
-  profileName: string
+  profileName?: string
   onFillComplete: (results: FillResultEntry[], siteUrl: string, siteTitle: string) => void
-  showToast: (msg: string, type?: ToastType) => void
+  showToast?: (msg: string, type?: ToastType) => void
 }): React.JSX.Element {
   const [filling, setFilling] = useState(false)
   const [fillError, setFillError] = useState<string | null>(null)

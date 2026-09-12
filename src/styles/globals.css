@@ -3,9 +3,9 @@
 @import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
 @layer base {
   *,

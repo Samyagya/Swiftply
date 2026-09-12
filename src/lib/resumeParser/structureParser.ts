@@ -17,6 +17,8 @@
 
 import { EducationEntry, Profile, WorkEntry } from '../types'
 
+type ParserState = 'header' | 'work' | 'education' | 'skills' | 'skip'
+
 // ---------------------------------------------------------------------------
 // Section heading detection patterns
 // ---------------------------------------------------------------------------
@@ -27,8 +29,6 @@ const SECTION_PATTERNS: Array<[RegExp, ParserState]> = [
   [/^(summary|objective|profile|about|overview|highlights)/i, 'skip'],
   [/^(projects|certifications|awards|publications|languages|interests|activities|volunteer)/i, 'skip'],
 ]
-
-type ParserState = 'header' | 'work' | 'education' | 'skills' | 'skip'
 
 // ---------------------------------------------------------------------------
 // Extraction regexes
@@ -294,8 +294,7 @@ export function parseStructure(rawText: string): Partial<Profile> {
         if (entry) workHistory.push(entry)
         workDraft = emptyWorkDraft()
         workDraftActive = false
-      }
-      if (state === 'education' && eduDraftActive) {
+      } else if ((state as ParserState) === 'education' && eduDraftActive) {
         const entry = flushEdu(eduDraft)
         if (entry) education.push(entry)
         eduDraft = emptyEduDraft()
@@ -353,9 +352,9 @@ export function parseStructure(rawText: string): Partial<Profile> {
       }
 
       if (dateMatch) {
+        const current = isPresent(dateMatch[2])
         eduDraft.startDate = normaliseDate(dateMatch[1])
-        eduDraft.current = isPresent(dateMatch[2])
-        eduDraft.endDate = eduDraft.current ? '' : normaliseDate(dateMatch[2])
+        eduDraft.endDate = current ? '' : normaliseDate(dateMatch[2])
       } else if (yearMatch && !dateMatch && eduDraftActive) {
         // Single year without range: treat as end date
         eduDraft.endDate = normaliseDate(yearMatch[0])
